@@ -116,7 +116,7 @@ window.addEventListener("load", () => {
         ),
       ]);
     }
-    let json = JSON.stringify(userConfiguration);
+    let json = JSON.stringify(tempConfiguration);
     let blob = new Blob([json], { type: "text/json" });
     let blobUrl = URL.createObjectURL(blob);
     let link = document.createElement("a");
