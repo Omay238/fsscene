@@ -28,21 +28,41 @@
             <h1>FALLSTRUKTUR Scene Editor</h1>
             <p>
                 This website is a <em>very</em> janky and unpolished scene
-                editor. Reload Intial Configuration is how you can update a map
-                multiple times. Once you update a map, you need to save the
-                configuration to update the content again. Load Goal
-                Configuration just allows you to save/share presets for specific
-                things. Please let me know if you encounter any bugs in usage at
+                editor. Please let me know if you encounter any bugs in usage at
                 the
                 <a href="https://github.com/Omay238/fsscene">GitHub</a> page.
             </p>
+            <p>Thanks to:</p>
+            <ul>
+                <li>
+                    Intstruck_dream for creating the first variable modified
+                    levels
+                </li>
+                <li>Safariminer for initially working on Openstruktur</li>
+                <li>
+                    proalfacracky & Koopa for pioneering the public knowledge of
+                    modifying the levels
+                </li>
+            </ul>
             <br />
             <hr />
+            <p>
+                Due to the way this tool is made it's required to keep the
+                modifications made to your scene. At the bottom, there is a
+                button to save your configuration. I recommend as best practice
+                to keep this file in the folder of your world.scene file.
+            </p>
             <form id="reloadexpected" action="javascript:void(0)">
                 <input type="file" />
                 <button type="submit">Reload Initial Configuration</button>
             </form>
             <hr />
+            <p>
+                This uses the same files as the above, however instead of the
+                expected input, it sets the expected output. Use it to load
+                shared presets. You do not need to use this to use presets,
+                however it's an easy way to do so.
+            </p>
             <form id="loadgoal" action="javascript:void(0)">
                 <input type="file" />
                 <button type="submit">Load Goal Configuration</button>
@@ -153,8 +173,10 @@
                         // aagghh this sucks
                         document
                             .getElementById("scene")
-                            .files[0].bytes()
-                            .then((scene) => {
+                            .files[0].arrayBuffer()
+                            .then((sceneBuffer) => {
+                                let scene = new Uint8Array(sceneBuffer);
+
                                 let searchBuffer = new ArrayBuffer(
                                     userConfiguration.length * 8,
                                 );
