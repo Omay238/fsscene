@@ -1,0 +1,211 @@
+var defaultConfiguration = [
+  ["cameraHeight", 0.9],
+  ["nearDeathFadeMin", 15],
+  ["nearDeathFadeMax", 17.3],
+  ["nearDeathFadeMaxDesat", 1],
+  ["mass", 1],
+  ["friction", 1],
+  ["bounce", 0.25],
+  ["gravityScale", 1],
+  ["inputTorque", 6],
+  ["inputVelocity", 8],
+  ["jumpForce", 6],
+  ["jumpBufferTime", 0.3],
+  ["coyoteTime", 0.3],
+  ["idleRotationalSpeedReductionRate", 30],
+  ["velocitySpeedCap", 5],
+  ["rotationalSpeedGroundCap", 12],
+  ["rotationalSpeedAirCap", 6],
+  ["rotationalSpeedReductionRatio", 70],
+  ["jumpableSlope", 0.5],
+  ["damageStartImpact", 17.3],
+  ["hitstunStartImpact", 4],
+  ["hitstunHighestImpact", 12],
+  ["hitstunDuration", 0.4],
+];
+
+var userConfiguration = defaultConfiguration;
+
+function showError(message) {
+  document.getElementById("error").style.display = "block";
+  document.querySelector("#error > p").innerText = message;
+}
+
+window.addEventListener("load", () => {
+  for (let conf = 0; conf < defaultConfiguration.length; conf++) {
+    let label = document.createElement("label");
+    label.innerText = defaultConfiguration[conf][0];
+    label.htmlFor = defaultConfiguration[conf][0];
+    let input = document.createElement("input");
+    input.id = defaultConfiguration[conf][0];
+    input.step = "0.01";
+    input.type = "number";
+    input.value = defaultConfiguration[conf][1];
+    input.placeholder = defaultConfiguration[conf][1];
+    document
+      .getElementById("settings")
+      .append(label, input, document.createElement("hr"));
+  }
+
+  document.querySelector("#error > button").addEventListener("click", () => {
+    document.getElementById("error").style.display = "none";
+  });
+
+  document.getElementById("reloadexpected").addEventListener("submit", () => {
+    document
+      .querySelector("#reloadexpected > input:nth-child(1)")
+      .files[0].text()
+      .then((data) => {
+        try {
+          let tempConfiguration = JSON.parse(data);
+          let tempUserConfiguration = userConfiguration;
+          for (let conf = 0; conf < tempConfiguration.length; conf++) {
+            if (defaultConfiguration[conf][0] == tempConfiguration[conf][0]) {
+              tempUserConfiguration[conf][1] = tempConfiguration[conf][1];
+            } else {
+              showError(
+                'Invalid content in JSON. Found "' +
+                  tempConfiguration[conf][0] +
+                  '". Expected "' +
+                  defaultConfiguration[conf][0] +
+                  '".',
+              );
+              return;
+            }
+          }
+        } catch {
+          showError("Invalid JSON File.");
+        }
+      });
+  });
+
+  document.getElementById("loadgoal").addEventListener("submit", () => {
+    document
+      .querySelector("#loadgoal > input:nth-child(1)")
+      .files[0].text()
+      .then((data) => {
+        try {
+          let goal = JSON.parse(data);
+          for (let conf = 0; conf < goal.length; conf++) {
+            if (defaultConfiguration[conf][0] == goal[conf][0]) {
+              document.getElementById(conf[0]).value = conf[1];
+            } else {
+              showError(
+                'Invalid content in JSON. Found "' +
+                  goal[conf][0] +
+                  '". Expected "' +
+                  goal[conf][0] +
+                  '".',
+              );
+              return;
+            }
+          }
+        } catch {
+          showError("Invalid JSON File.");
+        }
+      });
+  });
+
+  document.getElementById("saveconfiguration").addEventListener("click", () => {
+    let json = JSON.stringify(userConfiguration);
+    let blob = new Blob([json], { type: "text/json" });
+    let blobUrl = URL.createObjectURL(blob);
+    let link = document.createElement("a");
+    link.href = blobUrl;
+    link.download = "sceneConfiguration.json";
+    document.body.append(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(blobUrl);
+  });
+
+  document.getElementById("savescene").addEventListener("click", () => {
+    let userMod =
+      "Please put the below in your level description or in an accessible text element in your level.\n";
+    for (let conf = 0; conf < defaultConfiguration.length; conf++) {
+      if (
+        parseFloat(
+          document.getElementById(defaultConfiguration[conf][0]).value,
+        ) != defaultConfiguration[conf][1]
+      ) {
+        userMod +=
+          "\n" +
+          defaultConfiguration[conf][0] +
+          ": " +
+          defaultConfiguration[conf][1] +
+          " => " +
+          document.getElementById(defaultConfiguration[conf][0]).value;
+      }
+    }
+    document.getElementById("usermod").innerText = userMod;
+
+    // aagghh this sucks
+    document
+      .getElementById("scene")
+      .files[0].arrayBuffer()
+      .then((sceneBuffer) => {
+        let scene = new Uint8Array(sceneBuffer);
+
+        let searchBuffer = new ArrayBuffer(userConfiguration.length * 8);
+        let searchView = new DataView(searchBuffer);
+
+        userConfiguration.forEach((conf, i) => {
+          searchView.setFloat64(i * 8, conf[1], true);
+        });
+
+        let searchByteArray = new Uint8Array(searchBuffer);
+
+        let dataBuffer = new ArrayBuffer(userConfiguration.length * 8);
+        let dataView = new DataView(dataBuffer);
+
+        userConfiguration.forEach((conf, i) => {
+          dataView.setFloat64(
+            i * 8,
+            parseFloat(document.getElementById(conf[0]).value),
+            true,
+          );
+        });
+
+        let dataByteArray = new Uint8Array(dataBuffer);
+        let modScene = scene;
+        let found = 0;
+        for (let i = 0; i < scene.length - searchByteArray.length; i++) {
+          if (
+            JSON.stringify(scene.slice(i, i + searchByteArray.length)) ===
+            JSON.stringify(searchByteArray)
+          ) {
+            found += 1;
+            modScene.set(dataByteArray, i);
+          }
+        }
+
+        if (found === 0) {
+          showError(
+            "Didn't find any instances of the inputs! Is your Initial Config correct?",
+          );
+        } else if (found === 1) {
+          showError(
+            "Only found 1 instance of the inputs. Is your scene corrupted? Acknowledge although is possibly OK.",
+          );
+        } else if (found > 2) {
+          showError(
+            "Found " +
+              found +
+              " instances of the inputs. Watch out, some of your scene may have been deleted!",
+          );
+        }
+
+        let blob = new Blob([modScene], {
+          type: "application/octet-stream",
+        });
+        let blobUrl = URL.createObjectURL(blob);
+        let link = document.createElement("a");
+        link.href = blobUrl;
+        link.download = "world.scene";
+        document.body.append(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(blobUrl);
+      });
+  });
+});

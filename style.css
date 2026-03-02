@@ -1,0 +1,33 @@
+html,
+body {
+    margin: 0;
+    padding: 0;
+    width: 100vw;
+    height: 100vh;
+}
+#configuration {
+    width: 600px;
+    margin: auto;
+    margin-top: 0;
+}
+#settings > input,
+form > button,
+#scene,
+#savescene {
+    float: right;
+}
+
+#error {
+    z-index: 9999;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    margin: auto;
+    width: 400px;
+    height: 200px;
+    background: white;
+    border: 2px solid black;
+    text-align: center;
+}
