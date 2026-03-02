@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>FALLSTRUKTUR Scene Editor</title>
+        <style>
+            html,
+            body {
+                margin: 0;
+                padding: 0;
+            }
+            #configuration {
+                width: 600px;
+                margin: auto;
+                margin-top: 0;
+            }
+            #settings > input,
+            form > button,
+            #scene,
+            #savescene {
+                float: right;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="configuration">
+            <h1>FALLSTRUKTUR Scene Editor</h1>
+            <p>
+                This website is a <em>very</em> janky and unpolished scene
+                editor. Reload Intial Configuration is how you can update a map
+                multiple times. Once you update a map, you need to save the
+                configuration to update the content again. Load Goal
+                Configuration just allows you to save/share presets for specific
+                things. Please let me know if you encounter any bugs in usage at
+                the
+                <a href="https://github.com/Omay238/fsscene">GitHub</a> page.
+            </p>
+            <br />
+            <hr />
+            <form id="reloadexpected" action="javascript:void(0)">
+                <input type="file" />
+                <button type="submit">Reload Initial Configuration</button>
+            </form>
+            <hr />
+            <form id="loadgoal" action="javascript:void(0)">
+                <input type="file" />
+                <button type="submit">Load Goal Configuration</button>
+            </form>
+            <hr />
+            <br />
+            <hr />
+            <div id="settings"></div>
+            <br />
+            <hr />
+            <label for="scene">Scene</label>
+            <input type="file" id="scene" />
+            <hr />
+            <br />
+            <hr />
+            <p id="usermod"></p>
+            <button id="saveconfiguration">Save Configuration</button>
+            <button id="savescene">Save Scene</button>
+        </div>
+
+        <script>
+            var defaultConfiguration = [
+                ["cameraHeight", 0.9],
+                ["nearDeathFadeMin", 15],
+                ["nearDeathFadeMax", 17.3],
+                ["nearDeathFadeMaxDesat", 1],
+                ["mass", 1],
+                ["friction", 1],
+                ["bounce", 0.25],
+                ["gravityScale", 1],
+                ["inputTorque", 6],
+                ["inputVelocity", 8],
+                ["jumpForce", 6],
+                ["jumpBufferTime", 0.3],
+                ["coyoteTime", 0.3],
+                ["idleRotationalSpeedReductionRate", 30],
+                ["velocitySpeedCap", 5],
+                ["rotationalSpeedGroundCap", 12],
+                ["rotationalSpeedAirCap", 6],
+                ["rotationalSpeedReductionRatio", 70],
+                ["jumpableSlope", 0.5],
+                ["damageStartImpact", 17.3],
+                ["hitstunStartImpact", 4],
+                ["hitstunHighestImpact", 12],
+                ["hitstunDuration", 0.4],
+            ];
+
+            var userConfiguration = defaultConfiguration;
+
+            window.addEventListener("load", () => {
+                for (let conf = 0; conf < defaultConfiguration.length; conf++) {
+                    let label = document.createElement("label");
+                    label.innerText = defaultConfiguration[conf][0];
+                    label.htmlFor = defaultConfiguration[conf][0];
+                    let input = document.createElement("input");
+                    input.id = defaultConfiguration[conf][0];
+                    input.step = "0.01";
+                    input.type = "number";
+                    input.value = defaultConfiguration[conf][1];
+                    document
+                        .getElementById("settings")
+                        .append(label, input, document.createElement("hr"));
+                }
+
+                document
+                    .getElementById("reloadexpected")
+                    .addEventListener("submit", () => {
+                        document
+                            .querySelector(
+                                "#reloadexpected > input:nth-child(1)",
+                            )
+                            .files[0].text()
+                            .then((data) => {
+                                userConfiguration = JSON.parse(data);
+                            });
+                    });
+                document
+                    .getElementById("loadgoal")
+                    .addEventListener("submit", () => {
+                        document
+                            .querySelector("#loadgoal > input:nth-child(1)")
+                            .files[0].text()
+                            .then((data) => {
+                                let goal = JSON.parse(data);
+                                for (let conf = 0; conf < goal.length; conf++) {
+                                    document.getElementById(conf[0]).value =
+                                        conf[1];
+                                }
+                            });
+                    });
+                document
+                    .getElementById("saveconfiguration")
+                    .addEventListener("click", () => {
+                        let json = JSON.stringify(userConfiguration);
+                        let blob = new Blob([json], { type: "text/json" });
+                        let blobUrl = URL.createObjectURL(blob);
+                        let link = document.createElement("a");
+                        link.href = blobUrl;
+                        link.download = "sceneConfiguration.json";
+                        document.body.append(link);
+                        link.click();
+                        link.remove();
+                        URL.revokeObjectURL(blobUrl);
+                    });
+                document
+                    .getElementById("savescene")
+                    .addEventListener("click", () => {
+                        // aagghh this sucks
+                        document
+                            .getElementById("scene")
+                            .files[0].bytes()
+                            .then((scene) => {
+                                let searchBuffer = new ArrayBuffer(
+                                    userConfiguration.length * 8,
+                                );
+                                let searchView = new DataView(searchBuffer);
+
+                                userConfiguration.forEach((conf, i) => {
+                                    searchView.setFloat64(i * 8, conf[1], true);
+                                });
+
+                                let searchByteArray = new Uint8Array(
+                                    searchBuffer,
+                                );
+
+                                let dataBuffer = new ArrayBuffer(
+                                    userConfiguration.length * 8,
+                                );
+                                let dataView = new DataView(dataBuffer);
+
+                                userConfiguration.forEach((conf, i) => {
+                                    dataView.setFloat64(
+                                        i * 8,
+                                        parseFloat(
+                                            document.getElementById(conf[0])
+                                                .value,
+                                        ),
+                                        true,
+                                    );
+                                });
+
+                                let dataByteArray = new Uint8Array(dataBuffer);
+                                let modScene = scene;
+                                for (
+                                    let i = 0;
+                                    i < scene.length - searchByteArray.length;
+                                    i++
+                                ) {
+                                    if (
+                                        JSON.stringify(
+                                            scene.slice(
+                                                i,
+                                                i + searchByteArray.length,
+                                            ),
+                                        ) === JSON.stringify(searchByteArray)
+                                    ) {
+                                        modScene.set(dataByteArray, i);
+                                    }
+                                }
+                                let blob = new Blob([modScene], {
+                                    type: "application/octet-stream",
+                                });
+                                let blobUrl = URL.createObjectURL(blob);
+                                let link = document.createElement("a");
+                                link.href = blobUrl;
+                                link.download = "world.scene";
+                                document.body.append(link);
+                                link.click();
+                                link.remove();
+                                URL.revokeObjectURL(blobUrl);
+                            });
+                    });
+            });
+        </script>
+    </body>
+</html>
