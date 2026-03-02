@@ -107,6 +107,15 @@ window.addEventListener("load", () => {
   });
 
   document.getElementById("saveconfiguration").addEventListener("click", () => {
+    let tempConfiguration = [];
+    for (let conf = 0; conf < defaultConfiguration.length; conf++) {
+      tempConfiguration.push([
+        defaultConfiguration[conf][0],
+        parseFloat(
+          document.getElementById(defaultConfiguration[conf][0]).value,
+        ),
+      ]);
+    }
     let json = JSON.stringify(userConfiguration);
     let blob = new Blob([json], { type: "text/json" });
     let blobUrl = URL.createObjectURL(blob);
