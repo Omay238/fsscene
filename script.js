@@ -1,4 +1,4 @@
-var defaultConfiguration = [
+let defaultConfiguration = [
   ["cameraHeight", 0.9],
   ["nearDeathFadeMin", 15],
   ["nearDeathFadeMax", 17.3],
@@ -24,7 +24,7 @@ var defaultConfiguration = [
   ["hitstunDuration", 0.4],
 ];
 
-var userConfiguration = defaultConfiguration;
+let userConfiguration = JSON.parse(JSON.stringify(defaultConfiguration));
 
 function showError(message) {
   document.getElementById("error").style.display = "block";
@@ -58,9 +58,11 @@ window.addEventListener("load", () => {
       .then((data) => {
         try {
           let tempConfiguration = JSON.parse(data);
-          let tempUserConfiguration = userConfiguration;
+          let tempUserConfiguration = JSON.parse(
+            JSON.stringify(userConfiguration),
+          );
           for (let conf = 0; conf < tempConfiguration.length; conf++) {
-            if (defaultConfiguration[conf][0] == tempConfiguration[conf][0]) {
+            if (defaultConfiguration[conf][0] === tempConfiguration[conf][0]) {
               tempUserConfiguration[conf][1] = tempConfiguration[conf][1];
             } else {
               showError(
@@ -73,6 +75,7 @@ window.addEventListener("load", () => {
               return;
             }
           }
+          userConfiguration = tempUserConfiguration;
         } catch {
           showError("Invalid JSON File.");
         }
@@ -87,7 +90,7 @@ window.addEventListener("load", () => {
         try {
           let goal = JSON.parse(data);
           for (let conf = 0; conf < goal.length; conf++) {
-            if (defaultConfiguration[conf][0] == goal[conf][0]) {
+            if (defaultConfiguration[conf][0] === goal[conf][0]) {
               document.getElementById(conf[0]).value = conf[1];
             } else {
               showError(
@@ -135,7 +138,7 @@ window.addEventListener("load", () => {
       if (
         parseFloat(
           document.getElementById(defaultConfiguration[conf][0]).value,
-        ) != defaultConfiguration[conf][1]
+        ) !== defaultConfiguration[conf][1]
       ) {
         userMod +=
           "\n" +
